@@ -17,16 +17,14 @@ export class AuthController {
         body.password,
       );
 
-    return {
-      success: true,
-      user: {
-        email: body.email,
-        name: body.name,
-      },
-      hashedPassword,
-    };
-  }
-
+return {
+  success: true,
+  user: {
+    email: body.email,
+    name: body.name,
+  },
+};
+    
   @Post('login')
   async login(
     @Body() body: LoginDto,
