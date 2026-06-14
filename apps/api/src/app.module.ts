@@ -5,6 +5,7 @@ import { PrismaModule } from './database/prisma.module';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { NotesModule } from './modules/notes/notes.module';
 
 import { HealthController } from './modules/health/health.controller';
 
@@ -19,6 +20,8 @@ import { HealthController } from './modules/health/health.controller';
     UsersModule,
 
     AuthModule,
+
+    NotesModule,
   ],
   controllers: [HealthController],
 })
