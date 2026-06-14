@@ -1,23 +1,102 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
+import { UsersService } from '../users/users.service';
+
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly usersService: UsersService,
+  ) {}
 
-  async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 12);
-  }
-
-  async comparePasswords(
+  async register(
+    email: string,
     password: string,
-    hash: string,
-  ): Promise<boolean> {
-    return bcrypt.compare(password, hash);
+    name?: string,
+  ) {
+    const existingUser =
+      await this.usersService.findByEmail(
+        email,
+      );
+
+    if (existingUser) {
+      throw new ConflictException(
+        'User already exists',
+      );
+    }
+
+    const passwordHash =
+      await bcrypt.hash(password, 12);
+
+    const user =
+      await this.usersService.createUser(
+        email,
+        passwordHash,
+        name,
+      );
+
+    const token =
+      this.generateToken(
+        user.id,
+        user.email,
+      );
+
+    return {
+      user,
+      token,
+    };
   }
 
-  generateToken(userId: string, email: string) {
+  async login(
+    email: string,
+    password: string,
+  ) {
+    const user =
+      await this.usersService.findByEmail(
+        email,
+      );
+
+    if (!user) {
+      throw new UnauthorizedException(
+        'Invalid credentials',
+      );
+    }
+
+    const valid =
+      await bcrypt.compare(
+        password,
+        user.passwordHash,
+      );
+
+    if (!valid) {
+      throw new UnauthorizedException(
+        'Invalid credentials',
+      );
+    }
+
+    const token =
+      this.generateToken(
+        user.id,
+        user.email,
+      );
+
+    return {
+      user,
+      token,
+    };
+  }
+
+  generateToken(
+    userId: string,
+    email: string,
+  ) {
     return this.jwtService.sign({
       sub: userId,
       email,
