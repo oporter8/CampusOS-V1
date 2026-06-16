@@ -13,11 +13,30 @@ model User {
   passwordHash String
   name         String?
 
-  notes        Note[]
-  projects     Project[]
+  notes              Note[]
+  projects           Project[]
+  courses            Course[]
+  assignments        Assignment[]
+  calendarEvents     CalendarEvent[]
+  chatConversations  ChatConversation[]
+  activityLogs       ActivityLog[]
+  userSettings       UserSettings?
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model UserSettings {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  theme                String   @default("light") // "light" | "dark" | "auto"
+  notificationsEnabled Boolean  @default(true)
+  emailNotifications   Boolean  @default(true)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model Note {
@@ -26,20 +45,111 @@ model Note {
   content   String
 
   userId    String
-  user      User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  title       String
+  code        String
+  instructor  String?
+  location    String?
+  color       String       @default("#3B82F6")
+  semester    String?
+  
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  assignments Assignment[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    String   @default("medium") // "low" | "medium" | "high" | "urgent"
+  status      String   @default("not_started") // "not_started" | "in_progress" | "completed"
+  
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  location    String?
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Project {
   id          String   @id @default(cuid())
   title       String
   description String?
+  status      String   @default("planning") // "planning" | "active" | "completed" | "archived"
+  deadline    DateTime?
+  progress    Int      @default(0)
 
   userId      String
-  user        User @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ChatConversation {
+  id       String        @id @default(cuid())
+  title    String?
+  
+  userId   String
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  messages ChatMessage[]
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model ChatMessage {
+  id              String   @id @default(cuid())
+  content         String
+  role            String   // "user" | "assistant"
+  
+  conversationId  String
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String   // "note_created" | "note_updated" | "note_deleted" | "assignment_created" | "assignment_completed" | "project_updated" | "course_created" | "event_created"
+  entityType  String   // "note" | "assignment" | "project" | "course" | "event"
+  entityId    String?
+  details     String?  // JSON stringified details
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
 }
